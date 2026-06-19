@@ -2,6 +2,7 @@ package com.astreiagram.post_service.controller;
 
 import com.astreiagram.post_service.dto.CreatePostRequest;
 import com.astreiagram.post_service.dto.CommentRequest;
+import com.astreiagram.post_service.model.Comment;
 import com.astreiagram.post_service.model.Post;
 import com.astreiagram.post_service.service.PostService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,8 +24,9 @@ public class PostController {
     }
 
     @PostMapping
-    public ResponseEntity<Post> create(HttpServletRequest httpRequest,
-                                        @Valid @RequestBody CreatePostRequest request) {
+    public ResponseEntity<Post> create(
+			HttpServletRequest httpRequest,
+            @Valid @RequestBody CreatePostRequest request) {
         String userId = (String) httpRequest.getAttribute("userId");
         Post post = postService.createPost(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(post);
@@ -66,4 +68,10 @@ public class PostController {
         String userId = (String) httpRequest.getAttribute("userId");
         return ResponseEntity.ok(postService.addComment(id, userId, request.content()));
     }
+
+	@GetMapping("/{id}/comments")
+	public ResponseEntity<List<Comment>> getComments(@PathVariable String id) {
+		Post post = postService.getPostById(id);
+		return ResponseEntity.ok(post.comments());
+	}
 }

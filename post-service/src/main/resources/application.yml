@@ -16,6 +16,8 @@ spring:
         spring.json.add.type.headers: false
 
 server:
+  servlet:
+    context-path: /api
   port: 8081
 
 user-service:

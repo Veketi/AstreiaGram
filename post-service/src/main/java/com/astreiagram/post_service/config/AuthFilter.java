@@ -19,36 +19,42 @@ public class AuthFilter extends OncePerRequestFilter {
     public AuthFilter(UserClient userClient) {
         this.userClient = userClient;
     }
+	@Override
+	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
+			throws ServletException, IOException {
 
-    @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
-            throws ServletException, IOException {
+		String path = request.getServletPath();
+		String method = request.getMethod();
 
-        // libera endpoints públicos (health, swagger, etc.)
-        String path = request.getRequestURI();
-        if (path.startsWith("/actuator") || path.startsWith("/swagger-ui") || path.startsWith("/api-docs")) {
-            chain.doFilter(request, response);
-            return;
-        }
+		// públicos: health, swagger, docs
+		if (path.startsWith("/actuator") || path.startsWith("/swagger-ui") || path.startsWith("/api-docs")) {
+			chain.doFilter(request, response);
+			return;
+		}
 
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token ausente");
-            return;
-        }
+		// leitura de posts é pública (GET em /posts/**)
+		if (path.startsWith("/posts") && method.equals("GET")) {
+			chain.doFilter(request, response);
+			return;
+		}
 
-        String token = authHeader.substring(7);
-        ValidateTokenResponse validation = userClient.validateToken(token);
+		String authHeader = request.getHeader("Authorization");
+		if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+			response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token ausente");
+			return;
+		}
 
-        if (!validation.valid()) {
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token inválido");
-            return;
-        }
+		String token = authHeader.substring(7);
+		ValidateTokenResponse validation = userClient.validateToken(token);
 
-        // injeta o userId autenticado como atributo da requisição
-        request.setAttribute("userId", validation.userId());
-        request.setAttribute("username", validation.username());
+		if (!validation.valid()) {
+			response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token inválido");
+			return;
+		}
 
-        chain.doFilter(request, response);
-    }
+		request.setAttribute("userId", validation.userId());
+		request.setAttribute("username", validation.username());
+
+		chain.doFilter(request, response);
+	}
 }
