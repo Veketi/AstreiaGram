@@ -1,0 +1,64 @@
+basePath: /
+definitions:
+  dto.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  dto.FeedResponse:
+    properties:
+      limit:
+        type: integer
+      page:
+        type: integer
+      posts:
+        items:
+          type: string
+        type: array
+      userId:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Feed Service of AstreiaGram, provides feed related funcionality for
+    the application.
+  title: AstreiaGram Feed Service API
+  version: "1.0"
+paths:
+  /feed/{userId}:
+    get:
+      description: Returns posts from a feed of some user.
+      parameters:
+      - description: ID of the user
+        in: path
+        name: userId
+        required: true
+        type: string
+      - default: 1
+        description: Number of the page
+        in: query
+        name: page
+        type: integer
+      - default: 50
+        description: Number of post per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.FeedResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Searches for a feed.
+swagger: "2.0"
