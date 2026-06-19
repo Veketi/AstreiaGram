@@ -28,7 +28,7 @@ func NewPostCreatedConsumer(
 		reader: kafka.NewReader(kafka.ReaderConfig{
 			Brokers: brokers,
 			Topic: "post-created",
-			//GroupID: "feed-service",
+			GroupID: "feed-service",
 			MinBytes: 1,
 			MaxBytes: 10e6,
 			//MaxWait: 100 * time.Millisecond,
@@ -38,7 +38,7 @@ func NewPostCreatedConsumer(
 }
 
 func (c *PostCreatedConsumer) Start(ctx context.Context) {
-	c.reader.SetOffset(kafka.LastOffset)
+	//c.reader.SetOffset(kafka.LastOffset)
 	for {
 		log.Print("Aguardando evento...")
 
