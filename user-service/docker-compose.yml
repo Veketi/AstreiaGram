@@ -1,0 +1,42 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: astreiagram-postgres
+    environment:
+      POSTGRES_DB: astreiagram_users
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  user-service:
+    build: .
+    container_name: astreiagram-user-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: astreiagram_users
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      JWT_SECRET: CHANGE_ME_IN_PRODUCTION_USE_A_256BIT_RANDOM_SECRET_KEY_HERE
+      JWT_EXPIRATION_MS: 3600000
+      JWT_SERVICE_SECRET: CHANGE_ME_SERVICE_SECRET_KEY_FOR_INTER_SERVICE_CALLS
+      SERVER_PORT: 8080
+    ports:
+      - "8080:8080"
+    restart: on-failure
+
+volumes:
+  postgres_data:

@@ -1,0 +1,108 @@
+package com.astreiagram.userservice.service;
+
+import com.astreiagram.userservice.dto.AuthDtos.*;
+import com.astreiagram.userservice.entity.User;
+import com.astreiagram.userservice.exception.InvalidTokenException;
+import com.astreiagram.userservice.exception.UserAlreadyExistsException;
+import com.astreiagram.userservice.repository.UserRepository;
+import com.astreiagram.userservice.security.JwtUtil;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class AuthService {
+
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
+    private final AuthenticationManager authenticationManager;
+    private final UserDetailsService userDetailsService;
+
+    @Transactional
+    public AuthResponse register(RegisterRequest request) {
+        if (userRepository.existsByUsername(request.getUsername())) {
+            throw new UserAlreadyExistsException("Username já está em uso");
+        }
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new UserAlreadyExistsException("Email já está cadastrado");
+        }
+
+        User user = User.builder()
+                .username(request.getUsername())
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .bio(request.getBio())
+                .build();
+
+        userRepository.save(user);
+        log.info("Novo usuário registrado: {}", user.getUsername());
+
+        String token = jwtUtil.generateToken(user, user.getId());
+        return buildAuthResponse(token, user);
+    }
+
+    @Transactional(readOnly = true)
+    public AuthResponse login(LoginRequest request) {
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
+        );
+
+        User user = userRepository.findByUsername(request.getUsername()).orElseThrow();
+        String token = jwtUtil.generateToken(user, user.getId());
+        log.info("Login bem-sucedido: {}", user.getUsername());
+        return buildAuthResponse(token, user);
+    }
+
+    /**
+     * Valida um token JWT extraído do header Authorization.
+     * Usado pelos outros microsserviços (Post Service, Feed Service) para
+     * verificar se a requisição vem de um usuário autenticado.
+     *
+     * @throws InvalidTokenException se o token for inválido, expirado, mal formado
+     *                                ou pertencer a um usuário inexistente/inativo.
+     */
+    @Transactional(readOnly = true)
+    public ValidateTokenResponse validateToken(String token) {
+        String username;
+        try {
+            username = jwtUtil.extractUsername(token);
+        } catch (Exception e) {
+            log.warn("Token mal formado ou assinatura inválida: {}", e.getMessage());
+            throw new InvalidTokenException("Token inválido ou mal formado");
+        }
+
+        UserDetails userDetails;
+        try {
+            userDetails = userDetailsService.loadUserByUsername(username);
+        } catch (Exception e) {
+            throw new InvalidTokenException("Token inválido: usuário não encontrado");
+        }
+
+        if (!jwtUtil.isTokenValid(token, userDetails)) {
+            throw new InvalidTokenException("Token inválido ou expirado");
+        }
+
+        return ValidateTokenResponse.builder()
+                .userId(jwtUtil.extractUserId(token))
+                .username(username)
+                .build();
+    }
+
+    private AuthResponse buildAuthResponse(String token, User user) {
+        return AuthResponse.builder()
+                .token(token)
+                .tokenType("Bearer")
+                .userId(user.getId())
+                .username(user.getUsername())
+                .build();
+    }
+}
