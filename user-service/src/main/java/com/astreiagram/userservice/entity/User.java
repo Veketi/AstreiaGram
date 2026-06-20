@@ -23,7 +23,6 @@ public class User implements UserDetails {
 
     @Id
     @GeneratedValue
-    @JdbcTypeCode(SqlTypes.VARCHAR)
     private UUID id;
 
     @Column(nullable = false, unique = true, length = 50)

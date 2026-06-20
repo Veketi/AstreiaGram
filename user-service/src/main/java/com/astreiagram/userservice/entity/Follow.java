@@ -20,12 +20,10 @@ public class Follow {
 
     @Id
     @Column(name = "follower_id")
-    @JdbcTypeCode(SqlTypes.VARCHAR)
     private UUID followerId;
 
     @Id
     @Column(name = "followed_id")
-    @JdbcTypeCode(SqlTypes.VARCHAR)
     private UUID followedId;
 
     @Column(name = "created_at", nullable = false, updatable = false)
