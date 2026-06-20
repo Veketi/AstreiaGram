@@ -10,12 +10,12 @@ import (
 	"context"
 	"log"
 
+	"github.com/Veketi/astreiagram/feed-service/internal/client"
 	"github.com/Veketi/astreiagram/feed-service/internal/config"
 	"github.com/Veketi/astreiagram/feed-service/internal/consumer"
 	"github.com/Veketi/astreiagram/feed-service/internal/handler"
 	"github.com/Veketi/astreiagram/feed-service/internal/repository"
 	"github.com/Veketi/astreiagram/feed-service/internal/routes"
-	"github.com/Veketi/astreiagram/feed-service/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 )
@@ -27,10 +27,12 @@ func main() {
 		Addr: cfg.RedisAddr,
 	})
 
-	feedRepo := repository.NewFeedRepository(rdb)
-	feedHandler := handler.NewFeedHandler(feedRepo)
+	postClient := client.NewPostClient(cfg.PostClientUrl)
 
-	followerService := service.NewMockFollowerService()
+	feedRepo := repository.NewFeedRepository(rdb)
+	feedHandler := handler.NewFeedHandler(feedRepo, postClient)
+
+	followerService := client.NewUserClient(cfg.UserServiceUrl)
 
 	consumer := consumer.NewPostCreatedConsumer(
 		[]string{cfg.KafkaBroker},

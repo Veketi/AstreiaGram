@@ -63,10 +63,22 @@ func (c *PostCreatedConsumer) Start(ctx context.Context) {
 
 		log.Printf("novo post recebido: %+v", event)
 
+		err = c.repo.AddToFeed(
+			ctx,
+			event.AuthorID,
+			event.PostID,
+			event.CreatedAt,
+		)
+
 		followers, err := c.followerService.GetFollowers(
 			ctx,
 			event.AuthorID,
 		)
+
+		if err != nil {
+			log.Printf("erro ao buscar seguidores: %v", err)
+			continue
+		}
 
 		log.Printf(
 			"Seguidores de %s: %+v",
@@ -79,12 +91,10 @@ func (c *PostCreatedConsumer) Start(ctx context.Context) {
 			continue
 		}
 
-		err = c.repo.AddToFeed(
-			ctx,
-			event.AuthorID,
-			event.PostID,
-			event.CreatedAt,
-		)
+		if err != nil {
+			log.Printf("erro ao adicionar ao próprio feed: %v", err)
+			continue
+		}
 
 		for _, followerID := range followers {
 			log.Printf(

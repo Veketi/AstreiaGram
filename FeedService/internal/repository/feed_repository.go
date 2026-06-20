@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -35,8 +36,18 @@ func (r *FeedRepository) AddToFeed(
 	}).Err()
 
 	if err != nil {
+		log.Printf(
+			"Erro ao adicionar ao redis: %v",
+			err,
+		)
 		return err
 	}
+
+	exists, _ := r.client.Exists(ctx, key).Result()
+    log.Printf("exists=%d", exists)
+
+    members, _ := r.client.ZRange(ctx, key, 0, -1).Result()
+    log.Printf("members=%v", members)
 
 	size, err := r.client.ZCard(ctx, key).Result()
 

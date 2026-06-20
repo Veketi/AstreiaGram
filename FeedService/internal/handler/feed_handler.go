@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/Veketi/astreiagram/feed-service/internal/client"
 	"github.com/Veketi/astreiagram/feed-service/internal/dto"
 	"github.com/Veketi/astreiagram/feed-service/internal/repository"
 	"github.com/gin-gonic/gin"
@@ -11,10 +12,14 @@ import (
 
 type FeedHandler struct {
 	repo *repository.FeedRepository
+	postClient *client.PostClient
 }
 
-func NewFeedHandler(repo *repository.FeedRepository) *FeedHandler {
-	return &FeedHandler{repo: repo}
+func NewFeedHandler(repo *repository.FeedRepository, postClient *client.PostClient) *FeedHandler {
+	return &FeedHandler{
+		repo: repo,
+		postClient: postClient,
+	}
 }
 
 // GetFeed returns the feed of one user.
@@ -67,9 +72,22 @@ func (h *FeedHandler) GetFeed(c *gin.Context) {
 
 	offset := (page - 1) * limit
 
-	posts, err := h.repo.GetFeed(c.Request.Context(), userID, offset, limit)
+	postIDs, err := h.repo.GetFeed(c.Request.Context(), userID, offset, limit)
 
 	if err != nil {
+		c.JSON(
+			http.StatusInternalServerError, 
+			dto.ErrorResponse{
+				Error: err.Error(),
+			},
+		)
+		return
+	}
+
+	posts, err := h.postClient.GetPosts(c.Request.Context(), postIDs)
+
+	if err != nil {
+
 		c.JSON(
 			http.StatusInternalServerError, 
 			dto.ErrorResponse{
