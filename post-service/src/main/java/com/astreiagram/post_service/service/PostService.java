@@ -61,6 +61,10 @@ public class PostService {
             .orElseThrow(() -> new PostNotFoundException(id));
     }
 
+	public List<Post> getPostsByIds(List<String> ids) {
+		return postRepository.findByIdIn(ids);
+	}
+
     public Page<Post> getPostsByUserId(String userId, Pageable pageable) {
 		if(!userClient.userExists(userId)) {
 			throw new UserNotFoundException(userId);

@@ -43,6 +43,14 @@ public class PostController {
         return ResponseEntity.ok(PostResponse.from(postService.getPostById(id)));
     }
 
+	@GetMapping
+	public ResponseEntity<List<PostResponse>> getByIds(@RequestParam List<String> ids) {
+		List<PostResponse> posts = postService.getPostsByIds(ids).stream()
+			.map(PostResponse::from)
+			.toList();
+		return ResponseEntity.ok(posts);
+	}
+
     @GetMapping("/user/{userId}")
     public ResponseEntity<Page<PostResponse>> getByUserId(
 			@PathVariable String userId,
