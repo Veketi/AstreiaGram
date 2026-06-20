@@ -21,7 +21,7 @@ server:
   port: 8081
 
 user-service:
-  url: ${USER_SERVICE_URL:http://localhost:8080/api}
+  url: ${USER_SERVICE_URL:http://localhost:8083/api}
 
 springdoc:
   api-docs:

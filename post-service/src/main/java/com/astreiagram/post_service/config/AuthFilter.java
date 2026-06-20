@@ -47,7 +47,7 @@ public class AuthFilter extends OncePerRequestFilter {
 		String token = authHeader.substring(7);
 		ValidateTokenResponse validation = userClient.validateToken(token);
 
-		if (!validation.valid()) {
+		if (validation == null) {
 			response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token inválido");
 			return;
 		}
