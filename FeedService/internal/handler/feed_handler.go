@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 
@@ -37,6 +38,19 @@ func NewFeedHandler(repo *repository.FeedRepository, postClient *client.PostClie
 // @Router /feed/{userId} [get]
 func (h *FeedHandler) GetFeed(c *gin.Context) {
 	userID := c.Param("userId")
+
+	authenticatedUserID, exists := c.Get("userId")
+	if !exists {
+		c.JSON(http.StatusForbidden, dto.ErrorResponse{Error: "You don't have permissions for this feed."})
+		return
+	}
+
+	authenticatedUserIDStr, ok := authenticatedUserID.(string)
+	log.Printf("authenticatedUserID: %v (%T) | userID: %v (%T)", authenticatedUserIDStr, authenticatedUserIDStr, userID, userID)
+	if !ok || authenticatedUserIDStr != userID {
+		c.JSON(http.StatusForbidden, dto.ErrorResponse{Error: "You don't have permissions for this feed."})
+		return
+	}
 
 	page, err := strconv.ParseInt(
 		c.DefaultQuery("page", "1"),

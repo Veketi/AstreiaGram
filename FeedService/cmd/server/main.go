@@ -28,6 +28,7 @@ func main() {
 	})
 
 	postClient := client.NewPostClient(cfg.PostClientUrl)
+	userClient := client.NewUserClient(cfg.UserServiceUrl)
 
 	feedRepo := repository.NewFeedRepository(rdb)
 	feedHandler := handler.NewFeedHandler(feedRepo, postClient)
@@ -47,10 +48,11 @@ func main() {
 	routes.RegisterRoutes(
 		r,
 		feedHandler,
+		userClient,
 	)
 
 	log.Println("Feed Service starting on :8080")
-	if err := r.Run(":8080"); err != nil {
+	if err := r.Run(":" + cfg.ServerPort); err != nil {
 		log.Fatal(err)
 	}
 }

@@ -69,3 +69,41 @@ func (c *UserClient) GetFollowers(
 	return followers, nil
 }
 
+func (c *UserClient) ValidateToken(
+	ctx context.Context, 
+	token string,
+) (*dto.ValidateTokenResponse, error) {
+	url := fmt.Sprintf("%s/api/auth/validate", c.baseUrl)
+
+	req, err := http.NewRequestWithContext(
+		ctx, 
+		http.MethodPost, 
+		url,
+		nil,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Authorization", "Bearer " + token)
+
+	resp, err := c.httpClient.Do(req)
+
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("token inválido: status %d", resp.StatusCode)
+	}
+
+	var validation dto.ValidateTokenResponse
+
+	if err := json.NewDecoder(resp.Body).Decode(&validation); err != nil {
+		return nil, err
+	}
+
+	return &validation, nil
+}

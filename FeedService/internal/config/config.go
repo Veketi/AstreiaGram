@@ -3,6 +3,7 @@ package config
 import "os"
 
 type Config struct {
+	ServerPort string
 	RedisAddr string
 	KafkaBroker string
 	UserServiceUrl string
@@ -11,6 +12,10 @@ type Config struct {
 
 func Load() *Config {
 	return &Config{
+		ServerPort: getEnv(
+			"SERVER_PORT",
+			"8082",
+		),
 		RedisAddr: getEnv(
 			"REDIS_ADDR",
 			"localhost:6379",
@@ -21,7 +26,7 @@ func Load() *Config {
 		),
 		UserServiceUrl: getEnv(
 			"USER_SERVICE_URL",
-			"http://localhost:8083",
+			"http://localhost:8080",
 		),
 		PostClientUrl: getEnv(
 			"POST_SERVICE_URL",

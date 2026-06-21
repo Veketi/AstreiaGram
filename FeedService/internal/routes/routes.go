@@ -1,8 +1,10 @@
 package routes
 
 import (
-	"github.com/Veketi/astreiagram/feed-service/internal/handler"
 	_ "github.com/Veketi/astreiagram/feed-service/docs"
+	"github.com/Veketi/astreiagram/feed-service/internal/client"
+	"github.com/Veketi/astreiagram/feed-service/internal/handler"
+	"github.com/Veketi/astreiagram/feed-service/internal/middleware"
 	"github.com/gin-gonic/gin"
 
 	swaggerFiles "github.com/swaggo/files"
@@ -12,18 +14,24 @@ import (
 func RegisterRoutes(
 	r *gin.Engine,
 	feedHanlder *handler.FeedHandler,
+	userClient *client.UserClient,
 ) {
-	r.GET(
+	api := r.Group(
+		"/api",
+	)
+
+	api.GET(
 		"/health", 
 		health,
 	)
 
-	r.GET(
+	api.GET(
 		"/feed/:userId",
+		middleware.AuthRequired(userClient),
 		feedHanlder.GetFeed,
 	)
 
-	r.GET(
+	api.GET(
 		"/swagger/*any",
 		ginSwagger.WrapHandler(swaggerFiles.Handler),
 	)
