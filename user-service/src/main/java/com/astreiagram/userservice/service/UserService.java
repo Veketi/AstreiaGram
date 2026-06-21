@@ -27,11 +27,20 @@ public class UserService {
         return toProfileResponse(findUserOrThrow(userId));
     }
 
+    @Transactional(readOnly = true)
+    public void assertUserExists(UUID userId) {
+        if (!userRepository.existsById(userId)) {
+            throw new NoSuchElementException("Usuário não encontrado: " + userId);
+        }
+    }
+
     @Transactional
     public UserProfileResponse updateProfile(UUID userId, UpdateProfileRequest request) {
         User user = findUserOrThrow(userId);
-        if (request.getBio() != null)       user.setBio(request.getBio());
-        if (request.getAvatarUrl() != null) user.setAvatarUrl(request.getAvatarUrl());
+        if (request.getBio() != null)
+            user.setBio(request.getBio());
+        if (request.getAvatarUrl() != null)
+            user.setAvatarUrl(request.getAvatarUrl());
         userRepository.save(user);
         return toProfileResponse(user);
     }

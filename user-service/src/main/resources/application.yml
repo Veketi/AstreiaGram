@@ -5,9 +5,9 @@ spring:
   mvc:
     throw-exception-if-no-handler-found: true
 
-  web:
-    resources:
-      add-mappings: false
+  # web:
+  #   resources:
+  #     add-mappings: false
 
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:astreiagram_users}

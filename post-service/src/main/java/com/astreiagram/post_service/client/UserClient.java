@@ -32,9 +32,10 @@ public class UserClient {
 	public boolean userExists(String userId) {
 		try {
 			restClient.get()
-				.uri("/users/{id}", userId)
+				.uri("/users/{id}/exists", userId)
 				.retrieve()
 				.toBodilessEntity();
+			System.out.println("userId em formato inválido: " + userId);
 			return true;
 		} catch(HttpClientErrorException.NotFound ex) {
 			return false;
