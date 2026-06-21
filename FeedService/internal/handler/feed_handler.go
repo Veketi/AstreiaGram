@@ -1,41 +1,45 @@
 package handler
 
 import (
-	"log"
+	"context"
 	"net/http"
 	"strconv"
 
-	"github.com/Veketi/astreiagram/feed-service/internal/client"
 	"github.com/Veketi/astreiagram/feed-service/internal/dto"
 	"github.com/Veketi/astreiagram/feed-service/internal/repository"
+	"github.com/Veketi/astreiagram/feed-service/internal/util"
 	"github.com/gin-gonic/gin"
 )
 
-type FeedHandler struct {
-	repo *repository.FeedRepository
-	postClient *client.PostClient
+type PostGetter interface {
+	GetPosts(ctx context.Context, ids []string) ([]dto.PostResponse, error)
 }
 
-func NewFeedHandler(repo *repository.FeedRepository, postClient *client.PostClient) *FeedHandler {
+type FeedHandler struct {
+	repo *repository.FeedRepository
+	postClient PostGetter
+}
+
+func NewFeedHandler(repo *repository.FeedRepository, postClient PostGetter) *FeedHandler {
 	return &FeedHandler{
 		repo: repo,
 		postClient: postClient,
 	}
 }
 
-// GetFeed returns the feed of one user.
+// GetFeed retorna o feed de um usuário.
 //
-// @Summary Searches for a feed.
-// @Description Returns posts from a feed of some user.
+// @Summary Procura por um feed.
+// @Description Retorna posts de um feed de algum usuário.
 // @Tag Feed
 // @Produce json
-// @Param userId path string true "ID of the user"
-// @Param page query int false "Number of the page" default(1)
-// @Param limit query int false "Number of post per page" default(50)
+// @Param userId path string true "ID do usuário"
+// @Param page query int false "Número da página" default(1)
+// @Param limit query int false "Número de posts por página" default(50)
 // @Success 200 {object} dto.FeedResponse
 // @Failure 400 {object} dto.ErrorResponse
 // @Failure 500 {object} dto.ErrorResponse
-// @Router /feed/{userId} [get]
+// @Router /api/feed/{userId} [get]
 func (h *FeedHandler) GetFeed(c *gin.Context) {
 	userID := c.Param("userId")
 
@@ -46,7 +50,6 @@ func (h *FeedHandler) GetFeed(c *gin.Context) {
 	}
 
 	authenticatedUserIDStr, ok := authenticatedUserID.(string)
-	log.Printf("authenticatedUserID: %v (%T) | userID: %v (%T)", authenticatedUserIDStr, authenticatedUserIDStr, userID, userID)
 	if !ok || authenticatedUserIDStr != userID {
 		c.JSON(http.StatusForbidden, dto.ErrorResponse{Error: "You don't have permissions for this feed."})
 		return
@@ -110,6 +113,8 @@ func (h *FeedHandler) GetFeed(c *gin.Context) {
 		)
 		return
 	}
+
+	posts = util.ReorderPosts(postIDs, posts)
 
 	response := dto.FeedResponse{
 		UserID: userID,

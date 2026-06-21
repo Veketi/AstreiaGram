@@ -2,7 +2,7 @@ package main
 
 // @title AstreiaGram Feed Service API
 // @version 1.0
-// @description Feed Service of AstreiaGram, provides feed related funcionality for the application.
+// @description Feed Service do AstreiaGram, entrega funcionalidades relacionadas ao feed para a aplicação.
 // @host localhost:8080
 // @BasePath /
 
@@ -49,6 +49,7 @@ func main() {
 		r,
 		feedHandler,
 		userClient,
+		rdb,
 	)
 
 	log.Println("Feed Service starting on :8080")

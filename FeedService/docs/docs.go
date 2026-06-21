@@ -15,17 +15,17 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/feed/{userId}": {
+        "/api/feed/{userId}": {
             "get": {
-                "description": "Returns posts from a feed of some user.",
+                "description": "Retorna posts de um feed de algum usuário.",
                 "produces": [
                     "application/json"
                 ],
-                "summary": "Searches for a feed.",
+                "summary": "Procura por um feed.",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "ID of the user",
+                        "description": "ID do usuário",
                         "name": "userId",
                         "in": "path",
                         "required": true
@@ -33,14 +33,14 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "default": 1,
-                        "description": "Number of the page",
+                        "description": "Número da página",
                         "name": "page",
                         "in": "query"
                     },
                     {
                         "type": "integer",
                         "default": 50,
-                        "description": "Number of post per page",
+                        "description": "Número de posts por página",
                         "name": "limit",
                         "in": "query"
                     }
@@ -89,8 +89,34 @@ const docTemplate = `{
                 "posts": {
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "$ref": "#/definitions/dto.PostResponse"
                     }
+                },
+                "userId": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.PostResponse": {
+            "type": "object",
+            "properties": {
+                "caption": {
+                    "type": "string"
+                },
+                "commentCount": {
+                    "type": "integer"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "imageUrl": {
+                    "type": "string"
+                },
+                "likeCount": {
+                    "type": "integer"
                 },
                 "userId": {
                     "type": "string"
@@ -107,7 +133,7 @@ var SwaggerInfo = &swag.Spec{
 	BasePath:         "/",
 	Schemes:          []string{},
 	Title:            "AstreiaGram Feed Service API",
-	Description:      "Feed Service of AstreiaGram, provides feed related funcionality for the application.",
+	Description:      "Feed Service do AstreiaGram, entrega funcionalidades relacionadas ao feed para a aplicação.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

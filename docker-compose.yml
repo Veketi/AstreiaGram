@@ -1,8 +1,72 @@
 services:
+  user-service:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+    container_name: user-service
+    ports:
+      - "8080:8080"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: astreiagram_users
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      JWT_SECRET: change_this_to_a_real_256bit_secret_for_dev
+      JWT_SERVICE_SECRET: change_this_service_secret_for_dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  post-service:
+    build:
+      context: ./post-service
+      dockerfile: Dockerfile
+    container_name: post-service
+    ports:
+      - "8081:8081"
+    environment:
+      MONGO_URL: mongodb://mongo:27017/postservice
+      #SPRING_DATA_MONGODB_URI: mongodb://mongo:27017/postservice
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      USER_SERVICE_URL: http://user-service:8080/api
+    depends_on:
+      - mongo
+      - kafka
+      - user-service
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  feed-service:
+    build:
+      context: ./FeedService
+      dockerfile: Dockerfile
+    container_name: feed-service
+    ports:
+      - "8082:8082" 
+    environment: 
+      REDIS_ADDR: redis:6379
+      KAFKA_BROKER: kafka:9092
+      USER_SERVICE_URL: http://user-service:8080
+      POST_SERVICE_URL: http://post-service:8081
+    depends_on:
+      - redis
+      - kafka
+    networks:
+      - app-network
+    restart: unless-stopped
+
   redis:
     image: redis:alpine
     ports:
       - "6379:6379"
+    networks:
+      - app-network
+
   kafka:
     image: apache/kafka:latest
     ports:
@@ -11,11 +75,14 @@ services:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
       KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093 
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092 
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092 
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    networks:
+      - app-network
+
   postgres:
     image: postgres:15-alpine
     container_name: astreia_postgres_db
@@ -35,6 +102,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
   mongo:
     image: mongo:7
     container_name: mongo-postservice
@@ -42,6 +110,35 @@ services:
       - "27017:27017"
     volumes:
       - mongo-data:/data/db
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infra/prometheus.yaml:/etc/prometheus/prometheus.yaml
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+    networks:
+      - app-network
     restart: unless-stopped
 
 networks:
@@ -51,3 +148,4 @@ networks:
 volumes:
   astreia-data:
   mongo-data:
+  grafana-data:

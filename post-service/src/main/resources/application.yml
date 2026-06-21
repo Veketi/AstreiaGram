@@ -1,11 +1,11 @@
 spring:
   threads:
     virtual:
-      enabled: true
+      enabled: false
 
   data:
     mongodb:
-      uri: ${MONGO_URL:mongodb://localhost:27017/postservice}
+      uri: ${MONGO_URL:mongodb://mongo:27017/postservice}
 
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
@@ -20,6 +20,10 @@ server:
     context-path: /api
   port: 8081
 
+logging:
+  level:
+    org.springframework.data.mongodb: DEBUG
+
 user-service:
   url: ${USER_SERVICE_URL:http://localhost:8080/api}
 
@@ -33,4 +37,4 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus
+        include: health,info,metrics,prometheus,env,configprops

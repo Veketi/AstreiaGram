@@ -3,12 +3,15 @@ package consumer
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
+
 	//"time"
 
 	"github.com/Veketi/astreiagram/feed-service/internal/model"
 	"github.com/Veketi/astreiagram/feed-service/internal/repository"
 	"github.com/Veketi/astreiagram/feed-service/internal/service"
+	"github.com/Veketi/astreiagram/feed-service/internal/metrics"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -37,6 +40,61 @@ func NewPostCreatedConsumer(
 	}
 }
 
+func (c *PostCreatedConsumer) processEvent(
+	ctx context.Context,
+	event model.PostCreatedEvent,
+) error {
+	err := c.repo.AddToFeed(
+		ctx,
+		event.AuthorID,
+		event.PostID,
+		event.CreatedAt,
+	)
+
+	if err != nil {
+		metrics.EventsProcessed.WithLabelValues("error").Inc()
+		return fmt.Errorf("Erro ao adicionar ao próprio feed: %v", err)
+	}
+
+	followers, err := c.followerService.GetFollowers(
+		ctx,
+		event.AuthorID,
+	)
+
+	if err != nil {
+		metrics.EventsProcessed.WithLabelValues("error").Inc()
+		return fmt.Errorf("erro ao buscar seguidores: %v", err)
+	}
+
+	log.Printf(
+		"Seguidores de %s: %+v",
+		event.AuthorID,
+		followers,
+	)
+
+	for _, followerID := range followers {
+		log.Printf(
+			"Adicionando post ao feed do usuário %s",
+			followerID,
+		)
+
+		err = c.repo.AddToFeed(
+			ctx,
+			followerID,
+			event.PostID,
+			event.CreatedAt,
+		)
+
+		if err != nil {
+			log.Printf("erro redis: %v", err)
+		}
+
+	}
+
+	metrics.EventsProcessed.WithLabelValues("success").Inc()
+	return nil
+}
+
 func (c *PostCreatedConsumer) Start(ctx context.Context) {
 	//c.reader.SetOffset(kafka.LastOffset)
 	for {
@@ -63,56 +121,8 @@ func (c *PostCreatedConsumer) Start(ctx context.Context) {
 
 		log.Printf("novo post recebido: %+v", event)
 
-		err = c.repo.AddToFeed(
-			ctx,
-			event.AuthorID,
-			event.PostID,
-			event.CreatedAt,
-		)
-
-		followers, err := c.followerService.GetFollowers(
-			ctx,
-			event.AuthorID,
-		)
-
-		if err != nil {
-			log.Printf("erro ao buscar seguidores: %v", err)
-			continue
-		}
-
-		log.Printf(
-			"Seguidores de %s: %+v",
-			event.AuthorID,
-			followers,
-		)
-
-		if err != nil {
-			//log.Printf() error
-			continue
-		}
-
-		if err != nil {
-			log.Printf("erro ao adicionar ao próprio feed: %v", err)
-			continue
-		}
-
-		for _, followerID := range followers {
-			log.Printf(
-				"Adicionando post ao feed do usuário %s",
-				followerID,
-			)
-
-			err = c.repo.AddToFeed(
-				ctx,
-				followerID,
-				event.PostID,
-				event.CreatedAt,
-			)
-		}
-
-
-		if err != nil {
-			log.Printf("erro redis: %v", err)
+		if err := c.processEvent(ctx, event); err != nil {
+			log.Printf("erro ao processar evento: %v", err)
 		}
 	}
 }
