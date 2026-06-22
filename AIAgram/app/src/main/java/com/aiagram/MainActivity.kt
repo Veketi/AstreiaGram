@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
@@ -27,6 +28,7 @@ class MainActivity : ComponentActivity() {
                 ) {
                     val navController = rememberNavController()
                     androidx.compose.material3.Scaffold(
+                        modifier = Modifier.fillMaxSize(),
                         bottomBar = { com.aiagram.presentation.components.AIagramBottomBar(navController) },
                         content = { padding ->
                             androidx.compose.foundation.layout.Box(modifier = Modifier.padding(padding)) {

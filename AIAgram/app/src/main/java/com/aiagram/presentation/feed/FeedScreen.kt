@@ -57,7 +57,7 @@ fun FeedScreen(
 
     Scaffold(
         topBar = {
-            AIagramTopBar(title = "AIAgram")
+            AIagramTopBar(title = "AstreiaGram")
         },
         containerColor = Background
     ) { padding ->

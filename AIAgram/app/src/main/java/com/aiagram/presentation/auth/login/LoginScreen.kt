@@ -3,6 +3,7 @@ package com.aiagram.presentation.auth.login
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -19,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -28,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.aiagram.R
 import com.aiagram.presentation.theme.*
 
 @Composable
@@ -46,6 +49,7 @@ fun LoginScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .safeDrawingPadding()
             .background(
                 Brush.verticalGradient(
                     colors = listOf(Background, SurfaceVariant, Background),
@@ -64,8 +68,13 @@ fun LoginScreen(
             // Logo
             AnimatedVisibility(visible = true, enter = fadeIn() + slideInVertically()) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_logo),
+                        contentDescription = "Logo",
+                        modifier = Modifier.size(80.dp).padding(bottom = 16.dp)
+                    )
                     Text(
-                        text = "AIAgram",
+                        text = "AstreiaGram",
                         fontSize = 44.sp,
                         fontWeight = FontWeight.Black,
                         color = Gold,
