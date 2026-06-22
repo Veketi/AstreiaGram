@@ -51,6 +51,15 @@ func RegisterRoutes(
 	)
 }
 
+// health verifica se o Feed Service e o Redis estão disponíveis.
+//
+// @Summary Verificar saúde do Feed Service
+// @Description Retorna o estado do serviço e da conexão com o Redis.
+// @Tags Monitoramento
+// @Produce json
+// @Success 200 {object} map[string]string "Serviço e Redis disponíveis"
+// @Failure 503 {object} map[string]string "Redis indisponível"
+// @Router /health [get]
 func health(redisClient *redis.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(c.Request.Context(), 2 * time.Second)

@@ -4,7 +4,6 @@ package docs
 import "github.com/swaggo/swag"
 
 const docTemplate = `{
-    "schemes": {{ marshal .Schemes }},
     "swagger": "2.0",
     "info": {
         "description": "{{escape .Description}}",
@@ -14,54 +13,127 @@ const docTemplate = `{
     },
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
+    "schemes": {{ marshal .Schemes }},
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "Informe o token no formato: Bearer {token}",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    },
+    "tags": [
+        {
+            "name": "Feed",
+            "description": "Consulta do feed cronológico do usuário autenticado"
+        },
+        {
+            "name": "Monitoramento",
+            "description": "Verificação de disponibilidade do serviço"
+        }
+    ],
     "paths": {
         "/api/feed/{userId}": {
             "get": {
-                "description": "Retorna posts de um feed de algum usuário.",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retorna os posts do feed cronológico do usuário informado. O userId da rota deve ser o mesmo usuário identificado pelo token JWT.",
                 "produces": [
                     "application/json"
                 ],
-                "summary": "Procura por um feed.",
+                "tags": [
+                    "Feed"
+                ],
+                "summary": "Buscar o feed do usuário",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "ID do usuário",
+                        "description": "UUID do usuário autenticado",
                         "name": "userId",
                         "in": "path",
                         "required": true
                     },
                     {
+                        "minimum": 1,
                         "type": "integer",
                         "default": 1,
-                        "description": "Número da página",
+                        "description": "Número da página, iniciando em 1",
                         "name": "page",
                         "in": "query"
                     },
                     {
+                        "minimum": 1,
                         "type": "integer",
                         "default": 50,
-                        "description": "Número de posts por página",
+                        "description": "Quantidade de posts por página",
                         "name": "limit",
                         "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Feed retornado com sucesso",
                         "schema": {
                             "$ref": "#/definitions/dto.FeedResponse"
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Parâmetros page ou limit inválidos",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Token ausente ou inválido",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Tentativa de acessar o feed de outro usuário",
                         "schema": {
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Erro ao consultar o Redis ou o Post Service",
                         "schema": {
                             "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/health": {
+            "get": {
+                "description": "Retorna o estado do serviço e da conexão com o Redis.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Monitoramento"
+                ],
+                "summary": "Verificar saúde do Feed Service",
+                "responses": {
+                    "200": {
+                        "description": "Serviço e Redis disponíveis",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Redis indisponível",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -73,7 +145,8 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "error": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Invalid Token"
                 }
             }
         },
@@ -81,10 +154,12 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "limit": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 50
                 },
                 "page": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 1
                 },
                 "posts": {
                     "type": "array",
@@ -93,7 +168,8 @@ const docTemplate = `{
                     }
                 },
                 "userId": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
                 }
             }
         },
@@ -101,25 +177,32 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "caption": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Pôr do sol em São Paulo hoje"
                 },
                 "commentCount": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 7
                 },
                 "createdAt": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "2026-06-21T14:30:00"
                 },
                 "id": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "664f1c2e8a1b2c3d4e5f6789"
                 },
                 "imageUrl": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "https://cdn.astreiagram.com/posts/8f3a-imagem.jpg"
                 },
                 "likeCount": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 42
                 },
                 "userId": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
                 }
             }
         }
@@ -129,11 +212,11 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "localhost:8080",
+	Host:             "localhost:8082",
 	BasePath:         "/",
-	Schemes:          []string{},
+	Schemes:          []string{"http"},
 	Title:            "AstreiaGram Feed Service API",
-	Description:      "Feed Service do AstreiaGram, entrega funcionalidades relacionadas ao feed para a aplicação.",
+	Description:      "Microsserviço responsável por montar e retornar o feed cronológico dos usuários do AstreiaGram.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

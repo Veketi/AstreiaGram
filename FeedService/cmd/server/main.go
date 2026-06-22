@@ -2,9 +2,13 @@ package main
 
 // @title AstreiaGram Feed Service API
 // @version 1.0
-// @description Feed Service do AstreiaGram, entrega funcionalidades relacionadas ao feed para a aplicação.
-// @host localhost:8080
+// @description Microsserviço responsável por montar e retornar o feed cronológico dos usuários do AstreiaGram.
+// @host localhost:8082
 // @BasePath /
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Informe o token no formato: Bearer {token}
 
 import (
 	"context"

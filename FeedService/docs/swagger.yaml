@@ -1,81 +1,138 @@
-basePath: /
-definitions:
-  dto.ErrorResponse:
-    properties:
-      error:
-        type: string
-    type: object
-  dto.FeedResponse:
-    properties:
-      limit:
-        type: integer
-      page:
-        type: integer
-      posts:
-        items:
-          $ref: '#/definitions/dto.PostResponse'
-        type: array
-      userId:
-        type: string
-    type: object
-  dto.PostResponse:
-    properties:
-      caption:
-        type: string
-      commentCount:
-        type: integer
-      createdAt:
-        type: string
-      id:
-        type: string
-      imageUrl:
-        type: string
-      likeCount:
-        type: integer
-      userId:
-        type: string
-    type: object
-host: localhost:8080
+swagger: '2.0'
 info:
-  contact: {}
-  description: Feed Service do AstreiaGram, entrega funcionalidades relacionadas ao
-    feed para a aplicação.
+  description: Microsserviço responsável por montar e retornar o feed cronológico
+    dos usuários do AstreiaGram.
   title: AstreiaGram Feed Service API
-  version: "1.0"
+  contact: {}
+  version: '1.0'
+host: localhost:8082
+basePath: /
+schemes:
+- http
+securityDefinitions:
+  BearerAuth:
+    description: 'Informe o token no formato: Bearer {token}'
+    type: apiKey
+    name: Authorization
+    in: header
+tags:
+- name: Feed
+  description: Consulta do feed cronológico do usuário autenticado
+- name: Monitoramento
+  description: Verificação de disponibilidade do serviço
 paths:
   /api/feed/{userId}:
     get:
-      description: Retorna posts de um feed de algum usuário.
-      parameters:
-      - description: ID do usuário
-        in: path
-        name: userId
-        required: true
-        type: string
-      - default: 1
-        description: Número da página
-        in: query
-        name: page
-        type: integer
-      - default: 50
-        description: Número de posts por página
-        in: query
-        name: limit
-        type: integer
+      security:
+      - BearerAuth: []
+      description: Retorna os posts do feed cronológico do usuário informado. O userId
+        da rota deve ser o mesmo usuário identificado pelo token JWT.
       produces:
       - application/json
+      tags:
+      - Feed
+      summary: Buscar o feed do usuário
+      parameters:
+      - type: string
+        description: UUID do usuário autenticado
+        name: userId
+        in: path
+        required: true
+      - minimum: 1
+        type: integer
+        default: 1
+        description: Número da página, iniciando em 1
+        name: page
+        in: query
+      - minimum: 1
+        type: integer
+        default: 50
+        description: Quantidade de posts por página
+        name: limit
+        in: query
       responses:
-        "200":
-          description: OK
+        '200':
+          description: Feed retornado com sucesso
           schema:
             $ref: '#/definitions/dto.FeedResponse'
-        "400":
-          description: Bad Request
+        '400':
+          description: Parâmetros page ou limit inválidos
           schema:
             $ref: '#/definitions/dto.ErrorResponse'
-        "500":
-          description: Internal Server Error
+        '401':
+          description: Token ausente ou inválido
           schema:
             $ref: '#/definitions/dto.ErrorResponse'
-      summary: Procura por um feed.
-swagger: "2.0"
+        '403':
+          description: Tentativa de acessar o feed de outro usuário
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        '500':
+          description: Erro ao consultar o Redis ou o Post Service
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+  /health:
+    get:
+      description: Retorna o estado do serviço e da conexão com o Redis.
+      produces:
+      - application/json
+      tags:
+      - Monitoramento
+      summary: Verificar saúde do Feed Service
+      responses:
+        '200':
+          description: Serviço e Redis disponíveis
+          schema: &id001
+            type: object
+            additionalProperties:
+              type: string
+        '503':
+          description: Redis indisponível
+          schema: *id001
+definitions:
+  dto.ErrorResponse:
+    type: object
+    properties:
+      error:
+        type: string
+        example: Invalid Token
+  dto.FeedResponse:
+    type: object
+    properties:
+      limit:
+        type: integer
+        example: 50
+      page:
+        type: integer
+        example: 1
+      posts:
+        type: array
+        items:
+          $ref: '#/definitions/dto.PostResponse'
+      userId:
+        type: string
+        example: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+  dto.PostResponse:
+    type: object
+    properties:
+      caption:
+        type: string
+        example: Pôr do sol em São Paulo hoje
+      commentCount:
+        type: integer
+        example: 7
+      createdAt:
+        type: string
+        example: '2026-06-21T14:30:00'
+      id:
+        type: string
+        example: 664f1c2e8a1b2c3d4e5f6789
+      imageUrl:
+        type: string
+        example: https://cdn.astreiagram.com/posts/8f3a-imagem.jpg
+      likeCount:
+        type: integer
+        example: 42
+      userId:
+        type: string
+        example: a1b2c3d4-e5f6-7890-abcd-ef1234567890

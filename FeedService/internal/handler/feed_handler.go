@@ -27,18 +27,21 @@ func NewFeedHandler(repo *repository.FeedRepository, postClient PostGetter) *Fee
 	}
 }
 
-// GetFeed retorna o feed de um usuário.
+// GetFeed retorna o feed do usuário autenticado.
 //
-// @Summary Procura por um feed.
-// @Description Retorna posts de um feed de algum usuário.
-// @Tag Feed
+// @Summary Buscar o feed do usuário
+// @Description Retorna os posts do feed cronológico do usuário informado. O userId da rota deve ser o mesmo usuário identificado pelo token JWT.
+// @Tags Feed
 // @Produce json
-// @Param userId path string true "ID do usuário"
-// @Param page query int false "Número da página" default(1)
-// @Param limit query int false "Número de posts por página" default(50)
-// @Success 200 {object} dto.FeedResponse
-// @Failure 400 {object} dto.ErrorResponse
-// @Failure 500 {object} dto.ErrorResponse
+// @Security BearerAuth
+// @Param userId path string true "UUID do usuário autenticado" example(a1b2c3d4-e5f6-7890-abcd-ef1234567890)
+// @Param page query int false "Número da página, iniciando em 1" default(1) minimum(1)
+// @Param limit query int false "Quantidade de posts por página" default(50) minimum(1)
+// @Success 200 {object} dto.FeedResponse "Feed retornado com sucesso"
+// @Failure 400 {object} dto.ErrorResponse "Parâmetros page ou limit inválidos"
+// @Failure 401 {object} dto.ErrorResponse "Token ausente ou inválido"
+// @Failure 403 {object} dto.ErrorResponse "Tentativa de acessar o feed de outro usuário"
+// @Failure 500 {object} dto.ErrorResponse "Erro ao consultar o Redis ou o Post Service"
 // @Router /api/feed/{userId} [get]
 func (h *FeedHandler) GetFeed(c *gin.Context) {
 	userID := c.Param("userId")
