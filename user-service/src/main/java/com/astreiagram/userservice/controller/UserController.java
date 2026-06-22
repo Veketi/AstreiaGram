@@ -19,7 +19,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/users")
-@SecurityRequirement(name = "bearerAuth") // todos os endpoints deste controller exigem JWT no header Authorization
+@SecurityRequirement(name = "bearerAuth")
 @Tag(name = "Usuários", description = "Endpoints de perfil e relacionamento de seguidores entre usuários")
 public class UserController {
 
@@ -29,85 +29,189 @@ public class UserController {
                 this.userService = userService;
         }
 
+        /*
+         * BUSCAR PERFIL POR UUID
+         */
+
         @GetMapping("/{userId}")
-        @Operation(summary = "Buscar usuário por ID", description = "Retorna o perfil público de um usuário a partir do seu UUID. "
-                        +
-                        "Requer token JWT válido no header Authorization (Bearer Token). " +
-                        "Usado, por exemplo, pelo Post Service para exibir os dados do autor de um post.")
+        @Operation(summary = "Buscar usuário por ID", description = """
+                        Retorna o perfil de um usuário a partir do UUID.
+                        Requer token JWT válido no header Authorization.
+                        """)
         @ApiResponses({
-                        @ApiResponse(responseCode = "200", description = "Perfil do usuário retornado com sucesso"),
+                        @ApiResponse(responseCode = "200", description = "Perfil retornado com sucesso"),
                         @ApiResponse(responseCode = "400", description = "UUID em formato inválido"),
                         @ApiResponse(responseCode = "401", description = "Token ausente, inválido ou expirado"),
                         @ApiResponse(responseCode = "404", description = "Usuário não encontrado")
         })
         public ResponseEntity<UserProfileResponse> getUserById(
                         @Parameter(description = "UUID do usuário", example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable UUID userId) {
-                return ResponseEntity.ok(userService.getUserProfile(userId));
+                return ResponseEntity.ok(
+                                userService.getUserProfile(userId));
         }
 
+        /*
+         * BUSCAR PERFIL POR USERNAME
+         */
+
+        @GetMapping("/username/{username}")
+        @Operation(summary = "Buscar usuário por username", description = """
+                        Retorna o perfil de um usuário a partir do username,
+                        sem a necessidade de informar o UUID.
+                        Requer token JWT válido no header Authorization.
+                        """)
+        @ApiResponses({
+                        @ApiResponse(responseCode = "200", description = "Perfil retornado com sucesso"),
+                        @ApiResponse(responseCode = "401", description = "Token ausente, inválido ou expirado"),
+                        @ApiResponse(responseCode = "404", description = "Usuário não encontrado")
+        })
+        public ResponseEntity<UserProfileResponse> getUserByUsername(
+                        @Parameter(description = "Nome de usuário utilizado no cadastro", example = "joaosilva") @PathVariable String username) {
+                return ResponseEntity.ok(
+                                userService.getUserProfileByUsername(username));
+        }
+
+        /*
+         * PERFIL DO USUÁRIO AUTENTICADO
+         */
+
         @GetMapping("/me")
-        @Operation(summary = "Buscar perfil próprio", description = "Retorna o perfil completo do usuário autenticado (identificado pelo token JWT enviado). "
-                        +
-                        "Requer token JWT válido no header Authorization (Bearer Token).")
+        @Operation(summary = "Buscar perfil próprio", description = """
+                        Retorna o perfil do usuário autenticado,
+                        identificado pelo token JWT.
+                        """)
         @ApiResponses({
                         @ApiResponse(responseCode = "200", description = "Perfil retornado com sucesso"),
                         @ApiResponse(responseCode = "401", description = "Token ausente, inválido ou expirado")
         })
-        public ResponseEntity<UserProfileResponse> getMyProfile(@AuthenticationPrincipal User currentUser) {
-                return ResponseEntity.ok(userService.getUserProfile(currentUser.getId()));
+        public ResponseEntity<UserProfileResponse> getMyProfile(
+                        @AuthenticationPrincipal User currentUser) {
+                return ResponseEntity.ok(
+                                userService.getUserProfile(currentUser.getId()));
         }
 
+        /*
+         * ATUALIZAR PERFIL
+         */
+
         @PatchMapping("/me")
-        @Operation(summary = "Atualizar perfil próprio", description = "Atualiza a biografia e/ou a URL do avatar do usuário autenticado. "
-                        +
-                        "Campos não enviados (null) permanecem inalterados. " +
-                        "Requer token JWT válido no header Authorization (Bearer Token).")
+        @Operation(summary = "Atualizar perfil próprio", description = """
+                        Atualiza a biografia e/ou a URL do avatar do
+                        usuário autenticado.
+
+                        Campos não enviados permanecem inalterados.
+                        """)
         @ApiResponses({
                         @ApiResponse(responseCode = "200", description = "Perfil atualizado com sucesso"),
+                        @ApiResponse(responseCode = "400", description = "Dados enviados são inválidos"),
                         @ApiResponse(responseCode = "401", description = "Token ausente, inválido ou expirado")
         })
         public ResponseEntity<UserProfileResponse> updateMyProfile(
                         @AuthenticationPrincipal User currentUser,
                         @Valid @RequestBody UpdateProfileRequest request) {
-                return ResponseEntity.ok(userService.updateProfile(currentUser.getId(), request));
+                return ResponseEntity.ok(
+                                userService.updateProfile(
+                                                currentUser.getId(),
+                                                request));
         }
 
+        /*
+         * VERIFICAR EXISTÊNCIA POR UUID
+         */
+
         @GetMapping("/{userId}/exists")
-        @SecurityRequirements // público
-        @Operation(summary = "Verificar se um usuário existe", description = "Endpoint de uso interno entre microsserviços. Retorna apenas o status HTTP "
-                        +
-                        "(200 se existe, 404 se não existe), sem corpo com dados sensíveis. " +
-                        "Usado pelo Post Service e Feed Service para validar um userId antes de criar " +
-                        "posts, comentários ou curtidas, sem precisar expor dados pessoais do usuário.")
+        @SecurityRequirements
+        @Operation(summary = "Verificar usuário por ID", description = """
+                        Endpoint interno para verificar se um usuário existe.
+
+                        Retorna 200 quando o usuário existe e 404 quando
+                        não existe.
+                        """)
         @ApiResponses({
                         @ApiResponse(responseCode = "200", description = "Usuário existe"),
+                        @ApiResponse(responseCode = "400", description = "UUID em formato inválido"),
                         @ApiResponse(responseCode = "404", description = "Usuário não encontrado")
         })
         public ResponseEntity<Void> checkUserExists(
                         @Parameter(description = "UUID do usuário", example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable UUID userId) {
                 userService.assertUserExists(userId);
+
                 return ResponseEntity.ok().build();
         }
 
-        @GetMapping("/{userId}/followers")
-        @Operation(summary = "Listar seguidores de um usuário", description = "Retorna a lista de usuários que seguem o usuário informado. "
-                        +
-                        "Requer token JWT válido no header Authorization (Bearer Token).")
+        /*
+         * VERIFICAR EXISTÊNCIA POR USERNAME
+         */
+
+        @GetMapping("/username/{username}/exists")
+        @SecurityRequirements
+        @Operation(summary = "Verificar usuário por username", description = """
+                        Endpoint interno para verificar se um usuário
+                        existe a partir do username.
+
+                        Retorna 200 quando existe e 404 quando não existe.
+                        """)
         @ApiResponses({
-                        @ApiResponse(responseCode = "200", description = "Lista de seguidores retornada com sucesso"),
+                        @ApiResponse(responseCode = "200", description = "Usuário existe"),
+                        @ApiResponse(responseCode = "404", description = "Usuário não encontrado")
+        })
+        public ResponseEntity<Void> checkUserExistsByUsername(
+                        @Parameter(description = "Username do usuário", example = "joaosilva") @PathVariable String username) {
+                userService.assertUserExistsByUsername(username);
+
+                return ResponseEntity.ok().build();
+        }
+
+        /*
+         * LISTAR SEGUIDORES POR UUID
+         */
+
+        @GetMapping("/{userId}/followers")
+        @Operation(summary = "Listar seguidores por ID", description = """
+                        Retorna os usuários que seguem o usuário
+                        identificado pelo UUID.
+                        """)
+        @ApiResponses({
+                        @ApiResponse(responseCode = "200", description = "Seguidores retornados com sucesso"),
                         @ApiResponse(responseCode = "400", description = "UUID em formato inválido"),
                         @ApiResponse(responseCode = "401", description = "Token ausente, inválido ou expirado"),
                         @ApiResponse(responseCode = "404", description = "Usuário não encontrado")
         })
         public ResponseEntity<FollowListResponse> getFollowers(
                         @Parameter(description = "UUID do usuário", example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable UUID userId) {
-                return ResponseEntity.ok(userService.getFollowers(userId));
+                return ResponseEntity.ok(
+                                userService.getFollowers(userId));
         }
 
+        /*
+         * LISTAR SEGUIDORES POR USERNAME
+         */
+
+        @GetMapping("/username/{username}/followers")
+        @Operation(summary = "Listar seguidores por username", description = """
+                        Retorna os usuários que seguem o usuário
+                        identificado pelo username.
+                        """)
+        @ApiResponses({
+                        @ApiResponse(responseCode = "200", description = "Seguidores retornados com sucesso"),
+                        @ApiResponse(responseCode = "401", description = "Token ausente, inválido ou expirado"),
+                        @ApiResponse(responseCode = "404", description = "Usuário não encontrado")
+        })
+        public ResponseEntity<FollowListResponse> getFollowersByUsername(
+                        @Parameter(description = "Username do usuário", example = "joaosilva") @PathVariable String username) {
+                return ResponseEntity.ok(
+                                userService.getFollowersByUsername(username));
+        }
+
+        /*
+         * LISTAR USUÁRIOS SEGUIDOS POR UUID
+         */
+
         @GetMapping("/{userId}/following")
-        @Operation(summary = "Listar usuários seguidos", description = "Retorna a lista de usuários que o usuário informado está seguindo. "
-                        +
-                        "Requer token JWT válido no header Authorization (Bearer Token).")
+        @Operation(summary = "Listar usuários seguidos por ID", description = """
+                        Retorna os usuários que o usuário identificado
+                        pelo UUID está seguindo.
+                        """)
         @ApiResponses({
                         @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso"),
                         @ApiResponse(responseCode = "400", description = "UUID em formato inválido"),
@@ -116,32 +220,97 @@ public class UserController {
         })
         public ResponseEntity<FollowListResponse> getFollowing(
                         @Parameter(description = "UUID do usuário", example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable UUID userId) {
-                return ResponseEntity.ok(userService.getFollowing(userId));
+                return ResponseEntity.ok(
+                                userService.getFollowing(userId));
         }
 
-        @PostMapping("/{userId}/followers")
-        @Operation(summary = "Seguir um usuário", description = "O usuário autenticado passa a seguir o usuário identificado por userId. "
-                        +
-                        "Operação idempotente: chamar novamente não gera erro nem duplicidade. " +
-                        "Requer token JWT válido no header Authorization (Bearer Token).")
+        /*
+         * LISTAR USUÁRIOS SEGUIDOS POR USERNAME
+         */
+
+        @GetMapping("/username/{username}/following")
+        @Operation(summary = "Listar usuários seguidos por username", description = """
+                        Retorna os usuários que o usuário identificado
+                        pelo username está seguindo.
+                        """)
         @ApiResponses({
-                        @ApiResponse(responseCode = "204", description = "Usuário seguido com sucesso (ou já era seguido)"),
+                        @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso"),
+                        @ApiResponse(responseCode = "401", description = "Token ausente, inválido ou expirado"),
+                        @ApiResponse(responseCode = "404", description = "Usuário não encontrado")
+        })
+        public ResponseEntity<FollowListResponse> getFollowingByUsername(
+                        @Parameter(description = "Username do usuário", example = "joaosilva") @PathVariable String username) {
+                return ResponseEntity.ok(
+                                userService.getFollowingByUsername(username));
+        }
+
+        /*
+         * SEGUIR POR UUID
+         */
+
+        @PostMapping("/{userId}/followers")
+        @Operation(summary = "Seguir usuário por ID", description = """
+                        O usuário autenticado passa a seguir o usuário
+                        identificado pelo UUID.
+
+                        A operação é idempotente.
+                        """)
+        @ApiResponses({
+                        @ApiResponse(responseCode = "204", description = "Usuário seguido com sucesso"),
                         @ApiResponse(responseCode = "400", description = "Tentativa de seguir a si mesmo"),
                         @ApiResponse(responseCode = "401", description = "Token ausente, inválido ou expirado"),
-                        @ApiResponse(responseCode = "404", description = "Usuário a ser seguido não encontrado")
+                        @ApiResponse(responseCode = "404", description = "Usuário não encontrado")
         })
         public ResponseEntity<Void> follow(
                         @AuthenticationPrincipal User currentUser,
+
                         @Parameter(description = "UUID do usuário a ser seguido", example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable UUID userId) {
-                userService.follow(currentUser.getId(), userId);
+                userService.follow(
+                                currentUser.getId(),
+                                userId);
+
                 return ResponseEntity.noContent().build();
         }
 
+        /*
+         * SEGUIR POR USERNAME
+         */
+
+        @PostMapping("/username/{username}/followers")
+        @Operation(summary = "Seguir usuário por username", description = """
+                        O usuário autenticado passa a seguir o usuário
+                        identificado pelo username.
+
+                        A operação é idempotente.
+                        """)
+        @ApiResponses({
+                        @ApiResponse(responseCode = "204", description = "Usuário seguido com sucesso"),
+                        @ApiResponse(responseCode = "400", description = "Tentativa de seguir a si mesmo"),
+                        @ApiResponse(responseCode = "401", description = "Token ausente, inválido ou expirado"),
+                        @ApiResponse(responseCode = "404", description = "Usuário não encontrado")
+        })
+        public ResponseEntity<Void> followByUsername(
+                        @AuthenticationPrincipal User currentUser,
+
+                        @Parameter(description = "Username do usuário a ser seguido", example = "joaosilva") @PathVariable String username) {
+                userService.followByUsername(
+                                currentUser.getId(),
+                                username);
+
+                return ResponseEntity.noContent().build();
+        }
+
+        /*
+         * DEIXAR DE SEGUIR POR UUID
+         */
+
         @DeleteMapping("/{userId}/followers")
-        @Operation(summary = "Deixar de seguir um usuário", description = "O usuário autenticado deixa de seguir o usuário identificado por userId. "
-                        +
-                        "Operação idempotente: chamar mesmo sem seguir não gera erro. " +
-                        "Requer token JWT válido no header Authorization (Bearer Token).")
+        @Operation(summary = "Deixar de seguir usuário por ID", description = """
+                        O usuário autenticado deixa de seguir o usuário
+                        identificado pelo UUID.
+
+                        A operação é idempotente.
+                        """)
         @ApiResponses({
                         @ApiResponse(responseCode = "204", description = "Deixou de seguir com sucesso"),
                         @ApiResponse(responseCode = "401", description = "Token ausente, inválido ou expirado"),
@@ -149,8 +318,39 @@ public class UserController {
         })
         public ResponseEntity<Void> unfollow(
                         @AuthenticationPrincipal User currentUser,
-                        @Parameter(description = "UUID do usuário a deixar de seguir", example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable UUID userId) {
-                userService.unfollow(currentUser.getId(), userId);
+
+                        @Parameter(description = "UUID do usuário", example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable UUID userId) {
+                userService.unfollow(
+                                currentUser.getId(),
+                                userId);
+
+                return ResponseEntity.noContent().build();
+        }
+
+        /*
+         * DEIXAR DE SEGUIR POR USERNAME
+         */
+
+        @DeleteMapping("/username/{username}/followers")
+        @Operation(summary = "Deixar de seguir usuário por username", description = """
+                        O usuário autenticado deixa de seguir o usuário
+                        identificado pelo username.
+
+                        A operação é idempotente.
+                        """)
+        @ApiResponses({
+                        @ApiResponse(responseCode = "204", description = "Deixou de seguir com sucesso"),
+                        @ApiResponse(responseCode = "401", description = "Token ausente, inválido ou expirado"),
+                        @ApiResponse(responseCode = "404", description = "Usuário não encontrado")
+        })
+        public ResponseEntity<Void> unfollowByUsername(
+                        @AuthenticationPrincipal User currentUser,
+
+                        @Parameter(description = "Username do usuário", example = "joaosilva") @PathVariable String username) {
+                userService.unfollowByUsername(
+                                currentUser.getId(),
+                                username);
+
                 return ResponseEntity.noContent().build();
         }
 }
