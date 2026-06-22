@@ -1,1 +1,28 @@
+# Compilação e Artefatos
 target/
+build/
+**/build/
+/captures/
+**/output.json
+
+# Gradle e Caches
+.gradle/
+.navigation/
+
+# Configurações locais da IDE e SDK (Android Studio / IntelliJ)
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/gradle.xml
+.idea/assetWizardSettings.xml
+.idea/dictionaries/
+.idea/libraries/
+.idea/caches/
+local.properties
+
+# Sistema Operacional (Windows / Mac)
+.DS_Store
+Thumbs.db
+
+# Logs e Arquivos de Diagnóstico
+*.log
+*.hprof
