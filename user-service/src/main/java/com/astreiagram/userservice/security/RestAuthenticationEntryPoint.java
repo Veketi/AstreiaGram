@@ -30,7 +30,7 @@ public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
     ) throws IOException {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                 HttpStatus.UNAUTHORIZED,
-                "Autenticação necessária: token ausente, inválido ou expirado"
+                "Authentication required: token missing, invalid, or expired."
         );
         response.setStatus(HttpStatus.UNAUTHORIZED.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);

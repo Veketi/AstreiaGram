@@ -50,7 +50,7 @@ public class JwtUtil {
             String username = extractUsername(token);
             return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
         } catch (JwtException e) {
-            log.warn("Token inválido: {}", e.getMessage());
+            log.warn("Invalid token: {}", e.getMessage());
             return false;
         }
     }

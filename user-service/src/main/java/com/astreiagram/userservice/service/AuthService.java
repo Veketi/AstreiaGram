@@ -30,10 +30,10 @@ public class AuthService {
     @Transactional
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new UserAlreadyExistsException("Username já está em uso");
+            throw new UserAlreadyExistsException("Username is already in use");
         }
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new UserAlreadyExistsException("Email já está cadastrado");
+            throw new UserAlreadyExistsException("Email is already registered");
         }
 
         User user = User.builder()
@@ -44,7 +44,7 @@ public class AuthService {
                 .build();
 
         userRepository.save(user);
-        log.info("Novo usuário registrado: {}", user.getUsername());
+        log.info("New user registred: {}", user.getUsername());
 
         String token = jwtUtil.generateToken(user, user.getId());
         return buildAuthResponse(token, user);
@@ -58,7 +58,7 @@ public class AuthService {
 
         User user = userRepository.findByUsername(request.getUsername()).orElseThrow();
         String token = jwtUtil.generateToken(user, user.getId());
-        log.info("Login bem-sucedido: {}", user.getUsername());
+        log.info("Successful login: {}", user.getUsername());
         return buildAuthResponse(token, user);
     }
 
@@ -76,19 +76,19 @@ public class AuthService {
         try {
             username = jwtUtil.extractUsername(token);
         } catch (Exception e) {
-            log.warn("Token mal formado ou assinatura inválida: {}", e.getMessage());
-            throw new InvalidTokenException("Token inválido ou mal formado");
+            log.warn("Malformed token or invalid signature: {}", e.getMessage());
+            throw new InvalidTokenException("Invalid or malformed token");
         }
 
         UserDetails userDetails;
         try {
             userDetails = userDetailsService.loadUserByUsername(username);
         } catch (Exception e) {
-            throw new InvalidTokenException("Token inválido: usuário não encontrado");
+            throw new InvalidTokenException("Invalid token: user not found");
         }
 
         if (!jwtUtil.isTokenValid(token, userDetails)) {
-            throw new InvalidTokenException("Token inválido ou expirado");
+            throw new InvalidTokenException("Invalid or expired token");
         }
 
         return ValidateTokenResponse.builder()

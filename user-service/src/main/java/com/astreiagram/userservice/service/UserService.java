@@ -44,7 +44,7 @@ public class UserService {
     public void assertUserExists(UUID userId) {
         if (!userRepository.existsById(userId)) {
             throw new NoSuchElementException(
-                    "Usuário não encontrado: " + userId);
+                    "User not founded: " + userId);
         }
     }
 
@@ -144,7 +144,7 @@ public class UserService {
     public void follow(UUID followerId, UUID followedId) {
         if (followerId.equals(followedId)) {
             throw new IllegalArgumentException(
-                    "Não é possível seguir a si mesmo");
+                    "You can't follow yourself");
         }
 
         findUserOrThrow(followedId);
@@ -162,7 +162,7 @@ public class UserService {
                         .build());
 
         log.info(
-                "Usuário {} passou a seguir {}",
+                "User {} started following {}",
                 followerId,
                 followedId);
     }
@@ -189,7 +189,7 @@ public class UserService {
                 followedId);
 
         log.info(
-                "Usuário {} deixou de seguir {}",
+                "User {} unfollowed {}",
                 followerId,
                 followedId);
     }
@@ -210,13 +210,13 @@ public class UserService {
     private User findUserOrThrow(UUID userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new NoSuchElementException(
-                        "Usuário não encontrado: " + userId));
+                        "User not founded: " + userId));
     }
 
     private User findUserOrThrow(String username) {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new NoSuchElementException(
-                        "Usuário não encontrado: " + username));
+                        "User not founded: " + username));
     }
 
     private UserProfileResponse toProfileResponse(User user) {
