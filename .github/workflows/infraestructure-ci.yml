@@ -1,0 +1,33 @@
+name: Infrastructure CI Test
+
+on:
+  push:
+    branches: [ main, master, feature/ansible-pipeline-automatizado ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  ansible-docker-validation:
+    runs-on: ubuntu-latest # Roda na nuvem limpa do GitHub
+
+    steps:
+    - name: Checkout do código fonte
+      uses: actions/checkout@v4
+
+    - name: Instalar o Ansible na nuvem do GitHub
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ansible
+
+    - name: Executar Playbook do Ansible localmente na nuvem
+      run: |
+        cd infra-devops/ansible
+        ansible-playbook -i inventory playbook.yml -c local
+
+    - name: Validar status dos containers e teste de fumaça
+      run: |
+        echo "=== Lista de Containers Ativos na Nuvem ==="
+        sudo docker ps
+        
+        echo "=== Testando resposta do user-service ==="
+        curl -I http://localhost:8080/api
