@@ -2,7 +2,7 @@ name: Deploy Contínuo (CD) Local
 
 on:
   push:
-    branches: [ feature/ansible-pipeline-automatizado ]
+    branches: [ Ansible-pipeline-automatizado ]
 
 jobs:
   run-ansible-deploy:

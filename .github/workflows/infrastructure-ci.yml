@@ -2,7 +2,7 @@ name: Infrastructure CI Test
 
 on:
   push:
-    branches: [ main, master, feature/ansible-pipeline-automatizado ]
+    branches: [ main, master, Ansible-pipeline-automatizado ]
   pull_request:
     branches: [ main, master ]
 
