@@ -34,9 +34,9 @@ class AuthServiceTest {
 
     @BeforeEach
     void setUp() {
-        userRepository       = mock(UserRepository.class);
+        userRepository        = mock(UserRepository.class);
         authenticationManager = mock(AuthenticationManager.class);
-        userDetailsService   = mock(UserDetailsService.class);
+        userDetailsService    = mock(UserDetailsService.class);
 
         passwordEncoder = new Argon2PasswordEncoder(16, 32, 1, 4096, 2);
 
@@ -61,15 +61,24 @@ class AuthServiceTest {
         when(userRepository.existsByUsername("joao")).thenReturn(false);
         when(userRepository.existsByEmail("joao@email.com")).thenReturn(false);
 
-        User saved = User.builder().id(UUID.randomUUID()).username("joao").email("joao@email.com")
-                .password("hashed").active(true).build();
-        when(userRepository.save(any())).thenReturn(saved);
+        // O mock do save() retorna o objeto COM UUID — simulando o que o JPA faz em produção.
+        // O AuthService agora captura esse retorno (User savedUser = save(user)),
+        // então o token é gerado a partir do savedUser que já tem ID.
+        User savedUser = User.builder()
+                .id(UUID.randomUUID())
+                .username("joao")
+                .email("joao@email.com")
+                .password("hashed")
+                .active(true)
+                .build();
+        when(userRepository.save(any())).thenReturn(savedUser);
 
         AuthResponse response = authService.register(req);
 
         assertThat(response.getToken()).isNotBlank();
         assertThat(response.getUsername()).isEqualTo("joao");
         assertThat(response.getTokenType()).isEqualTo("Bearer");
+        assertThat(response.getUserId()).isEqualTo(savedUser.getId());
     }
 
     @Test
@@ -92,8 +101,13 @@ class AuthServiceTest {
         req.setUsername("joao");
         req.setPassword("Senha@123");
 
-        User user = User.builder().id(UUID.randomUUID()).username("joao").email("joao@email.com")
-                .password("hashed").active(true).build();
+        User user = User.builder()
+                .id(UUID.randomUUID())
+                .username("joao")
+                .email("joao@email.com")
+                .password("hashed")
+                .active(true)
+                .build();
 
         when(userRepository.findByUsername("joao")).thenReturn(Optional.of(user));
 
