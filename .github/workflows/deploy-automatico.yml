@@ -1,18 +1,19 @@
-name: Deploy Contínuo (CD) Local
+name: Deploy Contínuo (CD)
 
 on:
   push:
-    branches: [ Ansible-pipeline-automatizado ]
+    branches:
+      - feature/ansible-pipeline-automatizado
 
 jobs:
-  run-ansible-deploy:
-    runs-on: self-hosted # Diz ao GitHub para usar a sua VM
+  deploy:
+    runs-on: self-hosted
 
     steps:
-    - name: Atualizar código fonte na VM
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Executar o Ansible Playbook localmente
-      run: |
-        cd infra-devops/ansible
-        ansible-playbook -i inventory playbook.yml -c local
+      - name: Executar Deploy
+        run: |
+          cd infra-devops/ansible
+          ansible-playbook -i inventory playbook.yml -c local
