@@ -39,25 +39,25 @@ func (c *UserClient) GetFollowers(
 	)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error while creating the request at %s: %w", url, err)
 	}
 
 	resp, err := c.httpClient.Do(req)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error while calling the user-service at %s: %w", url, err)
 	}
 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("user-service returned %d", resp.StatusCode)
+		return nil, fmt.Errorf("user-service returned status %d for user %s", resp.StatusCode, userID)
 	}
 
 	var response dto.UsersReponse
 
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error while decoding followers response: %w", err)
 	}
 
 	followers := make([]string, 0, len(response.Users))
@@ -83,7 +83,7 @@ func (c *UserClient) ValidateToken(
 	)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error while creating the request at %s: %w", url, err)
 	}
 
 	req.Header.Set("Authorization", "Bearer " + token)
@@ -91,18 +91,18 @@ func (c *UserClient) ValidateToken(
 	resp, err := c.httpClient.Do(req)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error while calling user-service at %s: %w", url, err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("token inválido: status %d", resp.StatusCode)
+		return nil, fmt.Errorf("invalid token: user-service returned status %d", resp.StatusCode)
 	}
 
 	var validation dto.ValidateTokenResponse
 
 	if err := json.NewDecoder(resp.Body).Decode(&validation); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error decoding validate token response: %w", err)
 	}
 
 	return &validation, nil

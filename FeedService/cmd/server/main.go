@@ -12,12 +12,16 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/Veketi/astreiagram/feed-service/internal/client"
 	"github.com/Veketi/astreiagram/feed-service/internal/config"
 	"github.com/Veketi/astreiagram/feed-service/internal/consumer"
 	"github.com/Veketi/astreiagram/feed-service/internal/handler"
+	"github.com/Veketi/astreiagram/feed-service/internal/logger"
 	"github.com/Veketi/astreiagram/feed-service/internal/repository"
 	"github.com/Veketi/astreiagram/feed-service/internal/routes"
 	"github.com/gin-gonic/gin"
@@ -25,7 +29,16 @@ import (
 )
 
 func main() {
+	logger.Setup()
+
 	cfg := config.Load()
+	slog.Info("kafka broker config", "broker", cfg.KafkaBroker)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 
 	rdb := redis.NewClient(&redis.Options{
 		Addr: cfg.RedisAddr,
@@ -39,13 +52,18 @@ func main() {
 
 	followerService := client.NewUserClient(cfg.UserServiceUrl)
 
+
 	consumer := consumer.NewPostCreatedConsumer(
 		[]string{cfg.KafkaBroker},
 		feedRepo,
 		followerService,
 	)
 
-	go consumer.Start(context.Background())
+
+	slog.Info("starting kafka consumer",
+		"topic", "post-created",
+	)
+	go consumer.Start(ctx)
 
 	r := gin.Default()
 
@@ -56,8 +74,8 @@ func main() {
 		rdb,
 	)
 
-	log.Println("Feed Service starting on :8080")
+	slog.Info("Feed Service starting", "port", cfg.ServerPort)
 	if err := r.Run(":" + cfg.ServerPort); err != nil {
-		log.Fatal(err)
+		slog.Error("Error while starting the server", "error", err)
 	}
 }

@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -36,23 +35,22 @@ func (r *FeedRepository) AddToFeed(
 	}).Err()
 
 	if err != nil {
-		log.Printf(
-			"Erro ao adicionar ao redis: %v",
+		return fmt.Errorf(
+			"error while adding post %s to the feed of the user %s: %w", 
+			postID,
+			userID,
 			err,
 		)
-		return err
 	}
-
-	exists, _ := r.client.Exists(ctx, key).Result()
-    log.Printf("exists=%d", exists)
-
-    members, _ := r.client.ZRange(ctx, key, 0, -1).Result()
-    log.Printf("members=%v", members)
 
 	size, err := r.client.ZCard(ctx, key).Result()
 
 	if err != nil {
-		return err
+		return fmt.Errorf(
+			"error while verifying the size of the feed of the user %s: %w", 
+			userID, 
+			err,
+		)
 	}
 
 	if size > maxFeedSize {
@@ -61,7 +59,11 @@ func (r *FeedRepository) AddToFeed(
 		err = r.client.ZRemRangeByRank(ctx, key, 0, excess - 1).Err()
 
 		if err != nil {
-			return err
+			return fmt.Errorf(
+				"error while removing the excess of the feed of the user %s: %w",
+				userID,
+				err,
+			)
 		}
 	}
 
@@ -74,10 +76,15 @@ func (r *FeedRepository) GetFeed(
 	offset int64,
 	limit int64,
 ) ([]string, error) {
-	return r.client.ZRangeArgs(ctx, redis.ZRangeArgs{
+	result, err := r.client.ZRangeArgs(ctx, redis.ZRangeArgs{
 		Key: feedKey(userID),
 		Start: offset,
 		Stop: offset + limit - 1,
 		Rev: true,
 	}).Result()
+	if err != nil {
+		return nil, fmt.Errorf("redis ZRangeArgs failed for the user %s: %w", userID, err)
+	}
+
+	return result, nil
 }
