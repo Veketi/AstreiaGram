@@ -1,0 +1,1 @@
+{"virtualbox":{"/home/vagrant/astreiaGram":{"guestpath":"/home/vagrant/astreiaGram","hostpath":"C:/Users/Lenovo/Documents/GitHub/AstreiaGram","disabled":false,"__vagrantfile":true},"/vagrant":{"guestpath":"/vagrant","hostpath":"C:/Users/Lenovo/Documents/GitHub/AstreiaGram/infra-devops/vagrant","disabled":false,"__vagrantfile":true}}}

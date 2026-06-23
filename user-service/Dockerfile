@@ -1,12 +1,16 @@
 # ── Build stage ──────────────────────────────────────────────────────────────
-FROM eclipse-temurin:21-jdk-alpine AS builder
+FROM maven:3.9-eclipse-temurin-21-alpine AS builder
 WORKDIR /app
 
+# Copia apenas o pom primeiro para criar o cache de dependências do Maven
 COPY pom.xml .
-COPY src ./src
+RUN mvn dependency:go-offline -B \
+    -Dmaven.wagon.http.retryHandler.count=5
 
-RUN apk add --no-cache maven && \
-    mvn -q clean package -DskipTests
+# Copia o código fonte (se mudar o código, não rebaixa as dependências)
+COPY src ./src
+RUN mvn clean package -DskipTests -B \
+    -Dmaven.wagon.http.retryHandler.count=5
 
 # ── Runtime stage ─────────────────────────────────────────────────────────────
 FROM eclipse-temurin:21-jre-alpine
