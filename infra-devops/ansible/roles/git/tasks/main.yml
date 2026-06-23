@@ -1,0 +1,4 @@
+- name: Instalar Git
+  ansible.builtin.apt:
+    name: git
+    state: present

@@ -1,0 +1,14 @@
+- name: Verificar docker-compose
+  ansible.builtin.stat:
+    path: /home/vagrant/astreiaGram/docker-compose.yml
+  register: compose_file
+
+- name: Subir containers e compilar aplicações de forma sequencial
+  ansible.builtin.shell: |
+    cd /home/vagrant/astreiaGram
+    export BUILDX_NO_DEFAULT_LOAD=1
+    docker compose build --parallel=1   # Compila um por um para não estourar a rede
+    docker compose up -d
+  when: compose_file.stat.exists
+  async: 1800
+  poll: 20

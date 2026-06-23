@@ -1,0 +1,38 @@
+Vagrant.configure("2") do |config|
+
+  config.vm.box = "ubuntu/jammy64"
+  config.vm.hostname = "astreiagram-vm"
+
+  config.vm.network "private_network", ip: "192.168.56.10"
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = 4096
+    vb.cpus = 2
+    # Linha nova: melhora drástica na estabilidade de rede da VM
+    vb.customize ["modifyvm", :id, "--nictype1", "virtio"]
+  end
+
+
+  # Shared folder já inclui o projeto automaticamente
+  config.vm.synced_folder "../../", "/home/vagrant/astreiaGram"
+
+  # Rodar tudo dentro da VM (SEM ansible no host)
+  config.vm.provision "shell", inline: <<-SHELL
+
+    echo "📦 Instalando dependências base..."
+
+    sudo apt update -y
+    sudo apt install -y git curl python3 python3-pip
+
+    echo "📦 Instalando Ansible dentro da VM..."
+    sudo apt install -y git curl ansible
+
+    echo "🚀 Executando Ansible localmente na VM..."
+
+    cd /home/vagrant/astreiaGram/infra-devops/ansible
+
+    ansible-playbook -i inventory playbook.yml
+
+  SHELL
+
+end

@@ -1,0 +1,19 @@
+name: Deploy Contínuo (CD)
+
+on:
+  push:
+    branches:
+      - Ansible-pipeline-automatizado
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Executar Deploy
+        run: |
+          cd infra-devops/ansible
+          ansible-playbook -i inventory playbook.yml -c local

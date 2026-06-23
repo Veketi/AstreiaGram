@@ -1,0 +1,8 @@
+- name: Setup AstreiaGram VM
+  hosts: vm
+  become: true
+
+  roles:
+    - docker
+    - git
+    - deploy

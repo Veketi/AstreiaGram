@@ -1,0 +1,51 @@
+name: Infrastructure CI Test
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - Ansible-pipeline-automatizado
+
+  pull_request:
+    branches:
+      - main
+      - master
+
+jobs:
+  validate-infrastructure:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Instalar Ansible
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ansible
+
+      - name: Validar sintaxe do Playbook
+        run: |
+          cd infra-devops/ansible
+          ansible-playbook -i inventory playbook.yml --syntax-check
+
+      - name: Validar estrutura Ansible
+        run: |
+          test -f infra-devops/ansible/playbook.yml
+          test -f infra-devops/ansible/inventory
+          test -d infra-devops/ansible/roles/docker
+          test -d infra-devops/ansible/roles/git
+          test -d infra-devops/ansible/roles/deploy
+
+      - name: Instalar Docker Compose
+        run: |
+          docker compose version
+
+      - name: Build dos containers
+        run: |
+          docker compose build
+
+      - name: Listar imagens geradas
+        run: |
+          docker images
