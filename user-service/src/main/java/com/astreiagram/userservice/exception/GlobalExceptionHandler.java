@@ -41,17 +41,17 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BadCredentialsException.class)
     public ProblemDetail handleBadCredentials(BadCredentialsException ex) {
         // Mensagem genérica deliberada — não revelar se o usuário existe ou não
-        return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, "Credenciais inválidas");
+        return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, "Invalid credentials");
     }
 
     @ExceptionHandler(DisabledException.class)
     public ProblemDetail handleDisabled(DisabledException ex) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, "Conta desativada");
+        return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, "Account deactivated");
     }
 
     @ExceptionHandler(AccessDeniedException.class)
     public ProblemDetail handleAccessDenied(AccessDeniedException ex) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, "Acesso negado: você não tem permissão para executar esta ação");
+        return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, "Access denied: you do not have permission to perform this action.");
     }
 
     /**
@@ -62,7 +62,7 @@ public class GlobalExceptionHandler {
     public ProblemDetail handleMessageNotReadable(HttpMessageNotReadableException ex) {
         return ProblemDetail.forStatusAndDetail(
                 HttpStatus.BAD_REQUEST,
-                "Corpo da requisição ausente ou inválido. Verifique se o JSON enviado está correto e completo."
+                "Request body missing or invalid. Check that the submitted JSON is correct and complete."
         );
     }
 
@@ -73,7 +73,7 @@ public class GlobalExceptionHandler {
             String field = ((FieldError) error).getField();
             errors.put(field, error.getDefaultMessage());
         });
-        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Erro de validação dos dados enviados");
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Validation error for the submitted data");
         pd.setProperty("errors", errors);
         return pd;
     }
@@ -83,7 +83,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ProblemDetail handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
-        String detail = "Parâmetro '" + ex.getName() + "' possui formato inválido";
+        String detail = "Parameter '" + ex.getName() + "' has an invalid format";
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, detail);
     }
 
@@ -101,18 +101,18 @@ public class GlobalExceptionHandler {
     public ProblemDetail handleNoHandlerFound(NoHandlerFoundException ex) {
         return ProblemDetail.forStatusAndDetail(
                 HttpStatus.NOT_FOUND,
-                "Endpoint não encontrado: " + ex.getHttpMethod() + " " + ex.getRequestURL()
+                "Endpoint not found: " + ex.getHttpMethod() + " " + ex.getRequestURL()
         );
     }
 
     @ExceptionHandler(NoResourceFoundException.class)
     public ProblemDetail handleNoResourceFound(NoResourceFoundException ex) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, "Endpoint não encontrado");
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, "Endpoint not found");
     }
 
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleGeneric(Exception ex) {
         log.error("Erro não tratado: ", ex);
-        return ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "Erro interno do servidor");
+        return ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error");
     }
 }

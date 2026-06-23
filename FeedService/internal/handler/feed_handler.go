@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"net/http"
+	"log/slog"
 	"strconv"
 
 	"github.com/Veketi/astreiagram/feed-service/internal/dto"
@@ -48,13 +49,31 @@ func (h *FeedHandler) GetFeed(c *gin.Context) {
 
 	authenticatedUserID, exists := c.Get("userId")
 	if !exists {
-		c.JSON(http.StatusForbidden, dto.ErrorResponse{Error: "You don't have permissions for this feed."})
+		slog.Warn("feed access denied: user not authenticated.", "userId", userID)
+
+		c.JSON(
+			http.StatusForbidden, 
+			dto.ErrorResponse{
+				Error: "You don't have permissions for this feed.",
+			},
+		)
 		return
 	}
 
 	authenticatedUserIDStr, ok := authenticatedUserID.(string)
 	if !ok || authenticatedUserIDStr != userID {
-		c.JSON(http.StatusForbidden, dto.ErrorResponse{Error: "You don't have permissions for this feed."})
+		slog.Warn(
+			"feed access denied: user is not the owner of the feed",
+			"requestUserId", userID,
+			"authenticatedUserID", authenticatedUserIDStr,
+		)
+
+		c.JSON(
+			http.StatusForbidden, 
+			dto.ErrorResponse{
+				Error: "You don't have permissions for this feed.",
+			},
+		)
 		return
 	}
 
@@ -94,7 +113,20 @@ func (h *FeedHandler) GetFeed(c *gin.Context) {
 
 	postIDs, err := h.repo.GetFeed(c.Request.Context(), userID, offset, limit)
 
+	slog.Info(
+		"feed ids loaded",
+		"userId", userID,
+		"count", len(postIDs),
+		"postIDs", postIDs,
+	)
+
 	if err != nil {
+		slog.Error(
+			"error while getting the feed at redis", 
+			"userId", userID,
+			"error", err,
+		)
+
 		c.JSON(
 			http.StatusInternalServerError, 
 			dto.ErrorResponse{
@@ -106,7 +138,18 @@ func (h *FeedHandler) GetFeed(c *gin.Context) {
 
 	posts, err := h.postClient.GetPosts(c.Request.Context(), postIDs)
 
+	slog.Info(
+		"posts loaded",
+		"count", len(posts),
+	)
+
 	if err != nil {
+		slog.Error(
+			"error while getting posts on Post Service",
+			"userId", userID,
+			"postIds", postIDs,
+			"error", err,
+		)
 
 		c.JSON(
 			http.StatusInternalServerError, 
@@ -118,6 +161,11 @@ func (h *FeedHandler) GetFeed(c *gin.Context) {
 	}
 
 	posts = util.ReorderPosts(postIDs, posts)
+
+	slog.Info(
+		"posts reordered",
+		"count", len(posts),
+	)
 
 	response := dto.FeedResponse{
 		UserID: userID,

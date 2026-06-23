@@ -37,22 +37,22 @@ func (c *PostClient) GetPosts(
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqUrl, nil)
 	if err != nil {
-		return nil, fmt.Errorf("erro ao criar request: %w", err)
+		return nil, fmt.Errorf("error while creating the request at %s with method %s: %w", reqUrl, http.MethodGet, err)
 	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("erro ao chamar post-service: %w", err)
+		return nil, fmt.Errorf("error while calling post-service at %s: %w", reqUrl, err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("post-service retornou status %d", resp.StatusCode)
+		return nil, fmt.Errorf("post-service returned status %d", resp.StatusCode)
 	}
 
 	var posts []dto.PostResponse
 	if err := json.NewDecoder(resp.Body).Decode(&posts); err != nil {
-		return nil, fmt.Errorf("erro ao decodificar resposta: %w", err)
+		return nil, fmt.Errorf("error at decoding the response: %w", err)
 	}
 
 	return posts, nil

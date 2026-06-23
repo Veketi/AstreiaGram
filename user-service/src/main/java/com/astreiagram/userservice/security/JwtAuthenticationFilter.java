@@ -62,7 +62,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 }
             }
         } catch (Exception e) {
-            log.warn("Falha ao processar token JWT: {}", e.getMessage());
+            log.warn("Failed to process JWT token: {}", e.getMessage());
         }
 
         filterChain.doFilter(request, response);

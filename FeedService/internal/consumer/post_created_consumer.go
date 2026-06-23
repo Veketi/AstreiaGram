@@ -4,14 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 
 	//"time"
 
+	"github.com/Veketi/astreiagram/feed-service/internal/metrics"
 	"github.com/Veketi/astreiagram/feed-service/internal/model"
 	"github.com/Veketi/astreiagram/feed-service/internal/repository"
 	"github.com/Veketi/astreiagram/feed-service/internal/service"
-	"github.com/Veketi/astreiagram/feed-service/internal/metrics"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -34,7 +34,6 @@ func NewPostCreatedConsumer(
 			GroupID: "feed-service",
 			MinBytes: 1,
 			MaxBytes: 10e6,
-			//MaxWait: 100 * time.Millisecond,
 		}),
 		followerService: followerService,
 	}
@@ -53,7 +52,11 @@ func (c *PostCreatedConsumer) processEvent(
 
 	if err != nil {
 		metrics.EventsProcessed.WithLabelValues("error").Inc()
-		return fmt.Errorf("Erro ao adicionar ao próprio feed: %v", err)
+		return fmt.Errorf(
+			"Error while adding at adding the post to the user's own feed, user %s: %w", 
+			event.AuthorID,
+			err,
+		)
 	}
 
 	followers, err := c.followerService.GetFollowers(
@@ -63,21 +66,21 @@ func (c *PostCreatedConsumer) processEvent(
 
 	if err != nil {
 		metrics.EventsProcessed.WithLabelValues("error").Inc()
-		return fmt.Errorf("erro ao buscar seguidores: %v", err)
+		return fmt.Errorf(
+			"error while getting the followers for user %s: %w", 
+			event.AuthorID,
+			err,
+		)
 	}
 
-	log.Printf(
-		"Seguidores de %s: %+v",
-		event.AuthorID,
-		followers,
+	slog.Info(
+		"user followers",
+		"userId", event.AuthorID,
+		"followerIds", followers,
 	)
 
-	for _, followerID := range followers {
-		log.Printf(
-			"Adicionando post ao feed do usuário %s",
-			followerID,
-		)
 
+	for _, followerID := range followers {
 		err = c.repo.AddToFeed(
 			ctx,
 			followerID,
@@ -86,9 +89,13 @@ func (c *PostCreatedConsumer) processEvent(
 		)
 
 		if err != nil {
-			log.Printf("erro redis: %v", err)
+			slog.Error(
+				"error adding post to the follower's feed",
+				"followerId", followerID,
+				"postId", event.PostID,
+				"error", err,
+			)
 		}
-
 	}
 
 	metrics.EventsProcessed.WithLabelValues("success").Inc()
@@ -96,33 +103,48 @@ func (c *PostCreatedConsumer) processEvent(
 }
 
 func (c *PostCreatedConsumer) Start(ctx context.Context) {
-	//c.reader.SetOffset(kafka.LastOffset)
+	slog.Info(
+		"Started consuming events",
+	)
 	for {
-		log.Print("Aguardando evento...")
-
+		slog.Info("about to read kafka message")
 		msg, err := c.reader.ReadMessage(ctx)
+		slog.Info("message received RAW",
+			"value", string(msg.Value),
+		)
+		slog.Info("kafka returned message", "err", err)
 
 		if err != nil {
-			log.Printf("erro kafka: %v", err)
+			slog.Error(
+				"error reading message from kafka",
+				"messageValue", string(msg.Value),
+				"error", err,
+			)
 			continue
 		}
-
-		log.Printf(
-			"Evento recebido: %v",
-			string(msg.Value),
-		)
 
 		var event model.PostCreatedEvent
 
 		if err := json.Unmarshal(msg.Value, &event); err != nil {
-			log.Printf("erro json: %v", err)
+			slog.Error(
+				"error unmarshaling event",
+				"rawMessage", string(msg.Value),
+			)
 			continue
 		}
 
-		log.Printf("novo post recebido: %+v", event)
+		slog.Info(
+			"event received",
+			"postId", event.PostID,
+			"authorId", event.AuthorID,
+		)
 
 		if err := c.processEvent(ctx, event); err != nil {
-			log.Printf("erro ao processar evento: %v", err)
+			slog.Error(
+				"error processing event",
+				"postId", event.PostID,
+				"error", err,
+			)
 		}
 	}
 }
